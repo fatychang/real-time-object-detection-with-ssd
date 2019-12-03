@@ -38,7 +38,7 @@ confidence_thresh = 0.5
 
 # initialize the model
 ssd = SSD().start()
-ssd.load_model(dir_coffe_prototxt, dir_coffe_model)
+ssd.load_model()
 print("[INFO] network model loaded.")
 # load the classes
 CLASSES = ssd.load_classes()
@@ -169,7 +169,7 @@ try:
             
             # get the idx and color
             idx = ssd.get_class_idx(detections, i)
-            color = ssd.get_color(COLORS, idx)
+            color = ssd.get_color(idx)
             
             # draw the bounding boxes
             ssd.draw_bounding_box(color_image, detections, i, COLORS)
