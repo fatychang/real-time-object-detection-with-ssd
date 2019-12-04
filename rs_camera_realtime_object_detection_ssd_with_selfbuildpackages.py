@@ -72,6 +72,7 @@ COLORS = ssd.generate_colors(len(CLASSES))
 # config realsense camera pipeline
 pipeline = rs.pipeline()
 config = rs.config()
+rs.config.enable_device_from_file(config,"test.bag" )
 config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
 config.enable_stream(rs.stream.color, 640 ,480, rs.format.bgr8, 30)
 
@@ -89,6 +90,7 @@ pc = rs.pointcloud()
 pc_state = AppState()
 # declare a numpy array to store the pointcloud data for visualization
 out = np.empty((480, 640, 3), dtype=np.uint8)
+pc_state.get_size(out)
 # declare colorizer instance
 colorizer = rs.colorizer()
 
