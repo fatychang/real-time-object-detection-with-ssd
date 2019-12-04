@@ -15,6 +15,7 @@ Only bottle will be detected.
 #import necessary packages
 import numpy as np
 import pyrealsense2 as rs
+import matplotlib.pyplot as plt
 import cv2
 import pptk
 
@@ -218,14 +219,42 @@ try:
                     box_center = ssd.get_box_center()
                     # get the distance of the center
                     center_dist = depth_frame.get_distance(box_center[0], box_center[1])
-                    # update center distance to the image
-                    text_cen = "Dis:{:.2f}".format(center_dist)
-                    cv2.putText(color_image, text_cen, (box_center[0], box_center[1]-15),
-                            cv2.FONT_HERSHEY_COMPLEX, 0.5, color, 2)  
+
                     
-                    # obtain the bounding box depth
-                    box_z = verts_image[startY:endY, startX:endX, :]
-                    box_z_verts = box_z.reshape(-1, 3)
+                    # obtain the bounding box verts
+                    verts_bounding_box = verts_image[startY:endY, startX:endX, :]    # pointcloud of the bounding box
+                    verts_bounding_box_for_drawer = verts_bounding_box.reshape(-1, 3)                  # for pointcloud Drawer
+                    
+                    # filter out the background in the bounding box based on the distance                     
+                    # remove elements that the distances equal ro 0 
+                    t = verts_bounding_box_for_drawer[:,2]
+                    t = t[t!=0]
+                    # get the histogram of the all the pixels in bounding box
+                    num_bins = int(t.max() * 100)
+                    hist, bin_edges = np.histogram(t, bins=num_bins)
+                    hist_result = np.column_stack((bin_edges[:-1], hist))
+#                    # plot the histogram result
+#                    _ = plt.hist(t, bins=bin_edges)
+#                    plt.show()
+                    # get the index of the highest bin in the histogram
+                    histo_highest_index = np.argmax(hist)
+                    histo_highest_value = bin_edges[histo_highest_index]
+                    
+                    
+                    # get the range the histo_highest_value
+                    verts_obj = np.zeros((len(verts_bounding_box_for_drawer),3), dtype=np.float32)
+                    cnt_obj = 0
+                    obj_range = 0.03 # +/- (3cm)
+                    for i in range (0, len(verts_bounding_box_for_drawer)):
+                        if abs(verts_bounding_box_for_drawer[i,2] - histo_highest_value) < 0.03:
+                            verts_obj[cnt_obj,:] = verts_bounding_box_for_drawer[i,:]
+                            cnt_obj += 1                        
+                    # remove additional rows
+                    verts_obj = verts_obj[:cnt_obj-1]
+
+                    
+                    ####################################################################################
+                    ## Display additional information on the image
                     
                     # display position (x, y, z)
                     # noted: the verts_image stores the elements in (row, column),
@@ -238,6 +267,11 @@ try:
                     cv2.putText(color_image, text_cen_y, (10, 25), cv2.FONT_HERSHEY_COMPLEX, 0.5, color, 2)
                     cv2.putText(color_image, text_cen_z, (10, 40), cv2.FONT_HERSHEY_COMPLEX, 0.5, color, 2)
                     
+                    # update center distance to the image
+                    text_cen = "Dis:{:.2f}".format(center_dist)
+                    cv2.putText(color_image, text_cen, (box_center[0], box_center[1]-15),
+                            cv2.FONT_HERSHEY_COMPLEX, 0.5, color, 2)  
+                    
             #######################################################################
             # 5.  Visualization
             
@@ -247,10 +281,10 @@ try:
             pc_state.frustum(out, depth_intrinsics)
             pc_state.axes(out, pc_state.view([0,0,0]), pc_state.rotation, size=0.1, thickness=1)
             
-            pc_state.pointcloud_display(out, box_z_verts, texcoords, depth_colormap)
+            pc_state.pointcloud_display(out, verts_obj, texcoords, depth_colormap)
             
             # clear the verts
-            box_z_verts.fill(0)
+            verts_obj.fill(0)
             
             # monitoring mouse buttons
             if any(pc_state.mouse_btns):
