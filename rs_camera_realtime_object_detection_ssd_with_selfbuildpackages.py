@@ -53,6 +53,22 @@ COLORS = ssd.generate_colors(len(CLASSES))
 #print("[INFO] Device name and iD {}:{}".format(dev.get_info(rs.camera_info.name), 
 #        dev.get_info(rs.camera_info.product_id)))
 
+## find realsense device
+#ctx = rs.context()
+#devices = ctx.query_devices()
+#print("[INFO] Devices found {}".format(devices))
+#dev = devices[0]
+#
+## enable device advanced mode
+#advnc_mode = rs.rs400_advanced_mode(dev)
+#print("Advanced mode is", "enabled" if advnc_mode.is_enabled() else "disable")
+#
+## reduce the max depth to 1.5 meters
+#depth_table = advnc_mode.get_depth_table()
+#depth_table.depthClampMax = 1500
+#advnc_mode.set_depth_table(depth_table)
+
+
 # config realsense camera pipeline
 pipeline = rs.pipeline()
 config = rs.config()
