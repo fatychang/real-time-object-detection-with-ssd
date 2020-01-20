@@ -17,12 +17,11 @@ import numpy as np
 import pyrealsense2 as rs
 import matplotlib.pyplot as plt
 import cv2
-import pptk
+#import pptk
 
 # add sys path for self-build packages
 import sys
 sys.path.append('D:\Jen\Projects\RealSense Camera\Codes\Python\selfbuildpackages')
-
 # import selfbuildpackages
 from network_ssd import SSD
 from PointCloudDrawer import AppState
@@ -52,24 +51,24 @@ width = 640
 height = 480
 fr = 30
 
-## find realsense device
-#ctx = rs.context()
-#devices = ctx.query_devices()
-#print("[INFO] Devices found {}".format(devices))
-#dev = devices[0]
-#
-## enable device advanced mode
-#advnc_mode = rs.rs400_advanced_mode(dev)
-#print("Advanced mode is", "enabled" if advnc_mode.is_enabled() else "disable")
-#
-## reduce the max depth to 1.5 meters
-#depth_table = advnc_mode.get_depth_table()
-#depth_table.depthClampMax = 1500
-#advnc_mode.set_depth_table(depth_table)
+# find realsense device
+ctx = rs.context()
+devices = ctx.query_devices()
+print("[INFO] Devices found {}".format(devices))
+dev = devices[0]
+
+# enable device advanced mode
+advnc_mode = rs.rs400_advanced_mode(dev)
+print("Advanced mode is", "enabled" if advnc_mode.is_enabled() else "disable")
+
+# reduce the max depth to 1.5 meters
+depth_table = advnc_mode.get_depth_table()
+depth_table.depthClampMax = 1500
+advnc_mode.set_depth_table(depth_table)
 
 
 # Tell config that we will use a recorded device from filem to be used by the pipeline through playback.
-rs.config.enable_device_from_file(config, "test.bag")
+#rs.config.enable_device_from_file(config, "test.bag")
 
 # enable streams
 config.enable_stream(rs.stream.color, width, height, rs.format.bgr8, fr)
@@ -225,6 +224,10 @@ try:
                     verts_bounding_box = verts_image[startY:endY, startX:endX, :]    # pointcloud of the bounding box
                     verts_bounding_box_for_drawer = verts_bounding_box.reshape(-1, 3)                  # for pointcloud Drawer
                     
+                    # check if the bounding box is valid
+                    if(startY < 0 or endY <0 or startX < 0 or endX<0):
+                        continue
+                    
                     # filter out the background in the bounding box based on the distance                     
                     # remove elements that the distances equal ro 0 
                     t = verts_bounding_box_for_drawer[:,2]
@@ -251,6 +254,12 @@ try:
                             cnt_obj += 1                        
                     # remove additional rows
                     verts_obj = verts_obj[:cnt_obj-1]
+                    
+                    # calculate the center of the pointcloud
+                    obj_center = np.array(np.average(verts_obj, axis=0))
+                    
+
+                    
 
                     
                     ####################################################################################
@@ -260,9 +269,9 @@ try:
                     # noted: the verts_image stores the elements in (row, column),
                     # therefor, box_center[1] equals to row and
                     # box_center[2] equals to column
-                    text_cen_x = "Center x:{:.2f}".format(verts_image[box_center[1], box_center[0],0])
-                    text_cen_y = "Center y:{:.2f}".format(verts_image[box_center[1], box_center[0],1])
-                    text_cen_z = "Center z:{:.2f}".format(verts_image[box_center[1], box_center[0],2])
+                    text_cen_x = "Box Center x:{:.2f}, Obj Center x:{:.2f}".format(verts_image[box_center[1], box_center[0],0], obj_center[0])
+                    text_cen_y = "Box Center y:{:.2f}, Obj Center y:{:.2f}".format(verts_image[box_center[1], box_center[0],1], obj_center[1])
+                    text_cen_z = "Box Center z:{:.2f}, Obj Center z:{:.2f}".format(verts_image[box_center[1], box_center[0],2], obj_center[2])
                     cv2.putText(color_image, text_cen_x, (10, 10), cv2.FONT_HERSHEY_COMPLEX, 0.5, color, 2) 
                     cv2.putText(color_image, text_cen_y, (10, 25), cv2.FONT_HERSHEY_COMPLEX, 0.5, color, 2)
                     cv2.putText(color_image, text_cen_z, (10, 40), cv2.FONT_HERSHEY_COMPLEX, 0.5, color, 2)
@@ -270,18 +279,19 @@ try:
                     # update center distance to the image
                     text_cen = "Dis:{:.2f}".format(center_dist)
                     cv2.putText(color_image, text_cen, (box_center[0], box_center[1]-15),
-                            cv2.FONT_HERSHEY_COMPLEX, 0.5, color, 2)  
+                            cv2.FONT_HERSHEY_COMPLEX, 0.5, color, 2)
+                    
                     
             #######################################################################
             # 5.  Visualization
             
             # render pointcloud
-            out.fill(0)
-            pc_state.grid(out, (0, 0.5, 1), size=1, n=10)
-            pc_state.frustum(out, depth_intrinsics)
-            pc_state.axes(out, pc_state.view([0,0,0]), pc_state.rotation, size=0.1, thickness=1)
-            
-            pc_state.pointcloud_display(out, verts_obj, texcoords, depth_colormap)
+#            out.fill(0)
+#            pc_state.grid(out, (0, 0.5, 1), size=1, n=10)
+#            pc_state.frustum(out, depth_intrinsics)
+#            pc_state.axes(out, pc_state.view([0,0,0]), pc_state.rotation, size=0.1, thickness=1)
+#            
+#            pc_state.pointcloud_display(out, verts, texcoords, depth_colormap)
             
             # clear the verts
             verts_obj.fill(0)
@@ -292,7 +302,7 @@ try:
             
             cv2.imshow("RGB", color_image)
             cv2.imshow("Depth", depth_colormap_image)
-            cv2.imshow("Pointcloud", out)
+#            cv2.imshow("Pointcloud", out)
         
         
         
